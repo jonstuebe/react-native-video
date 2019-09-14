@@ -24,7 +24,8 @@ static int const RCTVideoUnset = -1;
 
 @implementation RCTVideo
 {
-  AVPlayer *_player;
+  AVQueuePlayer *_player;
+  AVPlayerLooper *_playerLooper;
   AVPlayerItem *_playerItem;
   NSDictionary *_source;
   BOOL _playerItemObserversSet;
@@ -366,9 +367,18 @@ static int const RCTVideoUnset = -1;
         _isExternalPlaybackActiveObserverRegistered = NO;
       }
         
-      _player = [AVPlayer playerWithPlayerItem:_playerItem];
-      _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
-        
+      _player = [AVQueuePlayer queuePlayerWithItems:@[_playerItem]];
+      if (_repeat) {
+        _playerLooper = [AVPlayerLooper playerLooperWithPlayer:_player templateItem:_playerItem timeRange:CMTimeRangeMake(kCMTimeZero, _playerItem.asset.duration)];
+        if (!_paused) {
+          [_player play];
+        }
+      } else {
+        _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
+      }
+
+      
+
       [_player addObserver:self forKeyPath:playbackRate options:0 context:nil];
       _playbackRateObserverRegistered = YES;
       
@@ -421,7 +431,7 @@ static int const RCTVideoUnset = -1;
     return;
   }
   
-  // AVPlayer can't airplay AVMutableCompositions
+  // AVQueuePlayer can't airplay AVMutableCompositions
   _allowsExternalPlayback = NO;
 
   // sideload text tracks
@@ -771,13 +781,7 @@ static int const RCTVideoUnset = -1;
     self.onVideoEnd(@{@"target": self.reactTag});
   }
   
-  if (_repeat) {
-    AVPlayerItem *item = [notification object];
-    [item seekToTime:kCMTimeZero];
-    [self applyModifiers];
-  } else {
-    [self removePlayerTimeObserver];
-  }
+  [self removePlayerTimeObserver];
 }
 
 #pragma mark - Prop setters
