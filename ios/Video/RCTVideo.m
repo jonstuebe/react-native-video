@@ -370,6 +370,7 @@ static int const RCTVideoUnset = -1;
       _player = [AVQueuePlayer queuePlayerWithItems:@[_playerItem]];
       if (_repeat) {
         _playerLooper = [AVPlayerLooper playerLooperWithPlayer:_player templateItem:_playerItem timeRange:CMTimeRangeMake(kCMTimeZero, _playerItem.asset.duration)];
+        [self applyModifiers];
         if (!_paused) {
           [_player play];
         }
